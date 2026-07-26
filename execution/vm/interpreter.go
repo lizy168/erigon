@@ -66,18 +66,20 @@ type CallContext struct {
 	// Intern memo for the top-of-stack key/address, keyed by the raw stack word
 	// it was built from. A nil handle means no memo — slot 0 is a legitimate
 	// key, so the source word cannot double as the validity flag.
-	// Placed before Stack so these fields stay in L1D rather than being pushed
-	// out by Stack.data (32 KB).
-	cachedKeySrc  uint256.Int
-	cachedAddrSrc uint256.Int
-	cachedKey     accounts.StorageKey
-	cachedAddr    accounts.Address
+	// The handles hold pointers, so they must precede Stack; the source words
+	// are read only by storage and account opcodes, so they sit past Stack to
+	// keep the prefix every dispatch touches small.
+	cachedKey  accounts.StorageKey
+	cachedAddr accounts.Address
 
 	// Contract carries pointers, so it must precede the pointer-free Stack:
 	// the GC scans a struct only up to its last pointer word (PtrBytes), and
 	// Stack.data is 32 KB it can skip entirely.
 	Contract Contract
 	Stack    Stack
+
+	cachedKeySrc  uint256.Int
+	cachedAddrSrc uint256.Int
 }
 
 // peekStorageKey returns the top-of-stack value as an interned StorageKey,
